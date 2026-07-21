@@ -1,5 +1,5 @@
-""
-Aprobación de Créditos app Streamlit
+"""
+Aprobación de Créditos — app Streamlit
 ---------------------------------------------------------------------------
 Misma fórmula y mismos coeficientes que entrenar_modelo.py (INTERCEPTO y
 COEFICIENTES). No se modifican aquí. Solo se corrige la presentación visual:
@@ -74,8 +74,11 @@ st.set_page_config(page_title="Aprobación de Créditos", page_icon="◆", layou
 
 # ---------------------------------------------------------------------------
 # Estilos (paleta y tipografías tomadas del HTML original)
+# Todo el CSS va encerrado en una sola cadena triple-comillada pasada a
+# st.markdown(..., unsafe_allow_html=True); así Streamlit lo interpreta
+# como un bloque <style> y no como código Python suelto.
 # ---------------------------------------------------------------------------
-render_html("""
+CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 :root{
@@ -215,7 +218,8 @@ div[data-testid="stButton"] button p{color:var(--black-950) !important;}
   opacity:0.5; font-family:'IBM Plex Mono',monospace; letter-spacing:0.05em;
 }
 </style>
-""")
+"""
+st.markdown(CSS, unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
 # Masthead
