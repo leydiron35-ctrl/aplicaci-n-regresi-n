@@ -1,9 +1,10 @@
-"""
+""
 Aprobación de Créditos — app Streamlit
 ---------------------------------------------------------------------------
 Misma fórmula y mismos coeficientes que entrenar_modelo.py (INTERCEPTO y
-COEFICIENTES). No se modifican aquí. Solo se adapta la interfaz visual,
-tomando como referencia el HTML original (aprobacion_de_creditos.html).
+COEFICIENTES). No se modifican aquí. Solo se corrige la presentación visual:
+el HTML se "aplana" antes de pasarlo a st.markdown para que Streamlit lo
+renderice como diseño y no como texto/código.
 """
 import time
 
@@ -38,8 +39,8 @@ def predict_proba(ingresos, gastos, deuda, hombre=0, casados=0, separados=0):
 
 
 def contribuciones(ingresos, gastos, deuda, hombre, casados, separados):
-    """Mismo desglose que `contributions` en el <script> del HTML, para
-    poder mostrar el peso de cada factor en el veredicto."""
+    """Mismo desglose que `contributions` en el <script> del HTML original,
+    para mostrar el peso de cada factor en el veredicto."""
     ingresos_t = np.log1p(max(ingresos, 0))
     return {
         "Género (Hombre vs. Mujer)": COEFICIENTES["Hombre"] * hombre,
@@ -52,6 +53,21 @@ def contribuciones(ingresos, gastos, deuda, hombre, casados, separados):
 
 
 # ---------------------------------------------------------------------------
+# Helper de render: evita que Streamlit interprete el HTML como bloque de
+# código. Esto pasaba porque las cadenas multilínea quedaban con una línea
+# en blanco al inicio y/o con la sangría propia del código Python (los
+# `with`/`if` anidados); Markdown interpreta eso como un bloque <pre><code>
+# y muestra las etiquetas literalmente en vez de renderizarlas. Aquí se
+# quita toda línea en blanco y toda sangría antes de entregarle el HTML a
+# st.markdown, así siempre llega "aplanado" y se renderiza como diseño.
+# ---------------------------------------------------------------------------
+def render_html(content: str) -> None:
+    lines = [line.strip() for line in content.strip().splitlines()]
+    flat = "".join(line for line in lines if line != "")
+    st.markdown(flat, unsafe_allow_html=True)
+
+
+# ---------------------------------------------------------------------------
 # Configuración de página
 # ---------------------------------------------------------------------------
 st.set_page_config(page_title="Aprobación de Créditos", page_icon="◆", layout="wide")
@@ -59,28 +75,16 @@ st.set_page_config(page_title="Aprobación de Créditos", page_icon="◆", layou
 # ---------------------------------------------------------------------------
 # Estilos (paleta y tipografías tomadas del HTML original)
 # ---------------------------------------------------------------------------
-st.markdown("""
+render_html("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
-
 :root{
-  --black-950:#0a0908;
-  --black-900:#121110;
-  --black-800:#1b1917;
-  --black-700:#262320;
-  --cream:#efe6d3;
-  --parchment:#b9ad96;
-  --gold:#b8892b;
-  --gold-bright:#d9a63e;
-  --gold-pale:#f0d494;
-  --wine:#5c1a2e;
-  --wine-bright:#9c3352;
-  --wine-soft:#c46a83;
+  --black-950:#0a0908; --black-900:#121110; --black-800:#1b1917; --black-700:#262320;
+  --cream:#efe6d3; --parchment:#b9ad96; --gold:#b8892b; --gold-bright:#d9a63e;
+  --gold-pale:#f0d494; --wine:#5c1a2e; --wine-bright:#9c3352; --wine-soft:#c46a83;
   --line: rgba(217,166,62,0.16);
 }
-
 #MainMenu, header[data-testid="stHeader"], footer{visibility:hidden;}
-
 .stApp{
   background:
     radial-gradient(ellipse 900px 500px at 12% -10%, rgba(217,166,62,0.09), transparent 60%),
@@ -90,8 +94,6 @@ st.markdown("""
   font-family:'Inter',sans-serif;
 }
 .block-container{max-width:1080px; padding-top:2.5rem; padding-bottom:4rem;}
-
-/* Masthead */
 .masthead{
   display:flex; justify-content:space-between; align-items:flex-end;
   border-bottom:1px solid var(--line); padding-bottom:24px; margin-bottom:34px;
@@ -115,16 +117,12 @@ st.markdown("""
   font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--parchment);
   opacity:0.7; text-align:right; line-height:1.6; text-transform:uppercase; letter-spacing:0.08em;
 }
-
-/* Panels (containers marcados con key="form_panel" / "result_panel") */
-div[data-testid="stVerticalBlockBorderWrapper"]:has(> div .panel-anchor),
 .st-key-form_panel, .st-key-result_panel{
   background:linear-gradient(180deg, var(--black-800), var(--black-900));
   border:1px solid var(--line);
   border-radius:14px;
   padding:8px 26px 26px;
 }
-
 .section-eyebrow{
   font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em;
   text-transform:uppercase; color:var(--gold-bright); margin:18px 0 4px;
@@ -133,91 +131,53 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(> div .panel-anchor),
   font-family:'Fraunces',serif; font-size:22px; font-weight:500; color:var(--cream);
   margin:0 0 18px;
 }
-.field-label{
-  font-size:13px; font-weight:600; color:var(--parchment); margin:14px 0 6px;
-}
+.field-label{ font-size:13px; font-weight:600; color:var(--parchment); margin:14px 0 6px; }
 .hint{font-size:11.5px; color:var(--parchment); opacity:0.65; margin:2px 0 0;}
-
-/* Pills (género / estado civil) */
 div[data-testid="stPills"] div[role="radiogroup"]{gap:8px;}
 div[data-testid="stPills"] button{
-  border-radius:9px !important;
-  border:1px solid var(--line) !important;
-  background:rgba(255,255,255,0.02) !important;
-  color:var(--parchment) !important;
-  opacity:0.85;
-  font-family:'Inter',sans-serif !important;
-  font-weight:500 !important;
+  border-radius:9px !important; border:1px solid var(--line) !important;
+  background:rgba(255,255,255,0.02) !important; color:var(--parchment) !important;
+  opacity:0.85; font-family:'Inter',sans-serif !important; font-weight:500 !important;
   font-size:13.5px !important;
 }
 div[data-testid="stPills"] button:hover{border-color:var(--gold) !important;}
 div[data-testid="stPills"] button[aria-checked="true"],
 div[data-testid="stPills"] button[aria-selected="true"]{
   background:linear-gradient(180deg, rgba(217,166,62,0.24), rgba(217,166,62,0.08)) !important;
-  border-color:var(--gold) !important;
-  color:var(--gold-pale) !important;
-  opacity:1;
+  border-color:var(--gold) !important; color:var(--gold-pale) !important; opacity:1;
 }
-
-/* Number input */
 div[data-testid="stNumberInput"] input{
-  background:rgba(0,0,0,0.3) !important;
-  border:1px solid var(--line) !important;
-  border-radius:9px !important;
-  color:var(--cream) !important;
-  font-family:'IBM Plex Mono',monospace !important;
-  font-size:15px !important;
+  background:rgba(0,0,0,0.3) !important; border:1px solid var(--line) !important;
+  border-radius:9px !important; color:var(--cream) !important;
+  font-family:'IBM Plex Mono',monospace !important; font-size:15px !important;
 }
 div[data-testid="stNumberInput"] > div{background:transparent !important; border:none !important;}
-
-/* Sliders */
 div[data-testid="stSlider"] [data-baseweb="slider"] div[role="slider"]{
-  background:var(--gold-bright) !important;
-  border:3px solid var(--black-900) !important;
+  background:var(--gold-bright) !important; border:3px solid var(--black-900) !important;
   box-shadow:0 0 0 1px var(--gold) !important;
 }
-div[data-testid="stSlider"] [data-baseweb="slider"] > div > div{
-  background:var(--gold-bright) !important;
-}
-div[data-testid="stSlider"] [data-baseweb="slider"] > div{
-  background:var(--black-700) !important;
-}
+div[data-testid="stSlider"] [data-baseweb="slider"] > div > div{ background:var(--gold-bright) !important; }
+div[data-testid="stSlider"] [data-baseweb="slider"] > div{ background:var(--black-700) !important; }
 div[data-testid="stTickBar"]{display:none;}
 div[data-testid="stSliderThumbValue"]{
-  color:var(--gold-bright) !important;
-  font-family:'IBM Plex Mono',monospace !important;
+  color:var(--gold-bright) !important; font-family:'IBM Plex Mono',monospace !important;
 }
-
-/* Botón evaluar */
 div[data-testid="stButton"] button{
-  width:100%;
-  margin-top:10px;
+  width:100%; margin-top:10px;
   background:linear-gradient(180deg, var(--gold-bright), var(--gold)) !important;
-  color:var(--black-950) !important;
-  border:none !important;
-  border-radius:9px !important;
-  padding:12px !important;
-  font-family:'Inter',sans-serif !important;
-  font-weight:700 !important;
-  font-size:14.5px !important;
-  letter-spacing:0.02em;
+  color:var(--black-950) !important; border:none !important; border-radius:9px !important;
+  padding:12px !important; font-family:'Inter',sans-serif !important; font-weight:700 !important;
+  font-size:14.5px !important; letter-spacing:0.02em;
 }
-div[data-testid="stButton"] button:hover{
-  box-shadow:0 8px 22px rgba(217,166,62,0.3);
-}
+div[data-testid="stButton"] button:hover{ box-shadow:0 8px 22px rgba(217,166,62,0.3); }
 div[data-testid="stButton"] button p{color:var(--black-950) !important;}
-
-/* Resultado */
 .verdict-empty{
   text-align:center; padding:34px 10px; color:var(--parchment); opacity:0.6;
   font-size:13.5px; line-height:1.6;
 }
 .verdict-empty svg{margin-bottom:14px; opacity:0.5;}
-
 .gauge-wrap{text-align:center;}
-.gauge-num{
-  font-family:'Fraunces',serif; font-size:56px; font-weight:500; margin:6px 0 0; line-height:1;
-}
+.gauge-num{ font-family:'Fraunces',serif; font-size:56px; font-weight:500; margin:6px 0 0; line-height:1; }
 .gauge-label{
   font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em;
   text-transform:uppercase; color:var(--parchment); opacity:0.65; margin-top:8px;
@@ -228,14 +188,12 @@ div[data-testid="stButton"] button p{color:var(--black-950) !important;}
 }
 .verdict-tag.approved{background:rgba(217,166,62,0.16); color:var(--gold-pale); border:1px solid rgba(217,166,62,0.45);}
 .verdict-tag.denied{background:rgba(156,51,82,0.18); color:var(--wine-soft); border:1px solid rgba(156,51,82,0.45);}
-
 .warning-banner{
   margin-top:18px; padding:12px 16px; background:rgba(156,51,82,0.16);
   border:1px solid rgba(156,51,82,0.45); border-radius:9px; color:var(--wine-soft);
   font-size:12.5px; line-height:1.6;
 }
 .warning-banner strong{color:var(--wine-soft);}
-
 .factor-list{margin-top:26px; padding-top:20px; border-top:1px solid var(--line);}
 .factor-list h3{
   font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.1em;
@@ -252,18 +210,17 @@ div[data-testid="stButton"] button p{color:var(--black-950) !important;}
 .factor-bar-fill.pos{background:var(--gold-bright); left:50%;}
 .factor-bar-fill.neg{background:var(--wine-bright); right:50%;}
 .factor-mid{position:absolute; left:50%; top:0; bottom:0; width:1px; background:rgba(239,230,211,0.18);}
-
 .footnote{
   text-align:center; margin-top:36px; font-size:11px; color:var(--parchment);
   opacity:0.5; font-family:'IBM Plex Mono',monospace; letter-spacing:0.05em;
 }
 </style>
-""", unsafe_allow_html=True)
+""")
 
 # ---------------------------------------------------------------------------
 # Masthead
 # ---------------------------------------------------------------------------
-st.markdown("""
+render_html("""
 <div class="masthead">
   <div class="brand">
     <div class="brand-mark">A</div>
@@ -277,7 +234,7 @@ st.markdown("""
     2,887 solicitudes históricas · variable objetivo: Aprobado
   </div>
 </div>
-""", unsafe_allow_html=True)
+""")
 
 if "resultado" not in st.session_state:
     st.session_state.resultado = None
@@ -289,53 +246,47 @@ col_form, col_result = st.columns([1.15, 0.85], gap="medium")
 # ---------------------------------------------------------------------------
 with col_form:
     with st.container(key="form_panel"):
-        st.markdown('<p class="section-eyebrow">Paso 1</p>', unsafe_allow_html=True)
-        st.markdown('<h2 class="section-title">Datos del solicitante</h2>', unsafe_allow_html=True)
+        render_html('<p class="section-eyebrow">Paso 1</p>')
+        render_html('<h2 class="section-title">Datos del solicitante</h2>')
 
-        st.markdown('<p class="field-label">Género</p>', unsafe_allow_html=True)
+        render_html('<p class="field-label">Género</p>')
         genero = st.pills(
             "Género", ["Hombre", "Mujer"], default="Hombre",
             label_visibility="collapsed", key="genero",
         )
         genero = genero or "Hombre"
 
-        st.markdown('<p class="field-label">Estado civil</p>', unsafe_allow_html=True)
+        render_html('<p class="field-label">Estado civil</p>')
         estado_civil = st.pills(
             "Estado civil", ["Casado", "Soltero", "Separado"], default="Casado",
             label_visibility="collapsed", key="estado_civil",
         )
         estado_civil = estado_civil or "Soltero"
 
-        st.markdown('<p class="field-label">Ingresos</p>', unsafe_allow_html=True)
+        render_html('<p class="field-label">Ingresos</p>')
         ingresos = st.number_input(
             "Ingresos", value=60.0, step=1.0,
             label_visibility="collapsed", key="ingresos",
         )
 
-        st.markdown('<p class="field-label">Ratio Gastos / Ingreso (%)</p>', unsafe_allow_html=True)
+        render_html('<p class="field-label">Ratio Gastos / Ingreso (%)</p>')
         gastos = st.slider(
             "Ratio Gastos/Ingreso", min_value=0, max_value=100, value=26,
             label_visibility="collapsed", key="gastos",
         )
-        st.markdown(
-            '<p class="hint">Qué porcentaje del ingreso se destina a gastos fijos — de 0% a 100%</p>',
-            unsafe_allow_html=True,
-        )
+        render_html('<p class="hint">Qué porcentaje del ingreso se destina a gastos fijos — de 0% a 100%</p>')
 
-        st.markdown('<p class="field-label">Ratio Deuda / Ingreso (%)</p>', unsafe_allow_html=True)
+        render_html('<p class="field-label">Ratio Deuda / Ingreso (%)</p>')
         deuda = st.slider(
             "Ratio Deuda/Ingreso", min_value=0, max_value=100, value=33,
             label_visibility="collapsed", key="deuda",
         )
-        st.markdown(
-            '<p class="hint">Qué porcentaje del ingreso se destina a pagar deuda existente — de 0% a 100%</p>',
-            unsafe_allow_html=True,
-        )
+        render_html('<p class="hint">Qué porcentaje del ingreso se destina a pagar deuda existente — de 0% a 100%</p>')
 
         evaluar = st.button("Evaluar solicitud", use_container_width=True, key="calc_btn")
 
 # ---------------------------------------------------------------------------
-# Cálculo (misma lógica que predict_proba / entrenar_modelo.py)
+# Cálculo (misma lógica que predict_proba / entrenar_modelo.py — sin cambios)
 # ---------------------------------------------------------------------------
 if evaluar:
     hombre = 1 if genero == "Hombre" else 0
@@ -360,20 +311,20 @@ if evaluar:
 # ---------------------------------------------------------------------------
 with col_result:
     with st.container(key="result_panel"):
-        st.markdown('<p class="section-eyebrow">Paso 2</p>', unsafe_allow_html=True)
-        st.markdown('<h2 class="section-title">Veredicto del modelo</h2>', unsafe_allow_html=True)
+        render_html('<p class="section-eyebrow">Paso 2</p>')
+        render_html('<h2 class="section-title">Veredicto del modelo</h2>')
 
         resultado = st.session_state.resultado
 
         if resultado is None:
-            st.markdown("""
+            render_html("""
             <div class="verdict-empty">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
                 <circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>
               </svg>
-              <div>Completa el formulario y pulsa<br>"Evaluar solicitud" para ver el resultado.</div>
+              <div>Completa el formulario y pulsa "Evaluar solicitud" para ver el resultado.</div>
             </div>
-            """, unsafe_allow_html=True)
+            """)
         else:
             prob = resultado["prob"]
             contrib = resultado["contrib"]
@@ -386,11 +337,13 @@ with col_result:
             if (g + d) > 100:
                 warning_html = f"""
                 <div class="warning-banner">
-                  <strong>⚠ Perfil financieramente inviable:</strong> este solicitante destinaría el
-                  {g}% de su ingreso a gastos fijos más el {d}% a deuda ({g + d:.0f}%
-                  del ingreso en total). Eso deja al solicitante con más compromisos que ingreso disponible,
+                  <strong>⚠ Perfil financieramente inviable:</strong>
+                  este solicitante destinaría el {g}% de su ingreso a gastos fijos
+                  más el {d}% a deuda ({g + d:.0f}% del ingreso en total).
+                  Eso deja al solicitante con más compromisos que ingreso disponible,
                   aunque el modelo no siempre lo refleje en la probabilidad de aprobación.
-                </div>"""
+                </div>
+                """
 
             max_abs = max(max(abs(v) for v in contrib.values()), 0.001)
             factor_rows = ""
@@ -404,12 +357,13 @@ with col_result:
                     <div class="factor-mid"></div>
                     <div class="factor-bar-fill {cls}" style="width:{width_pct}%"></div>
                   </div>
-                </div>"""
+                </div>
+                """
 
             veredicto_txt = "✓ CRÉDITO APROBADO" if aprobado else "✕ CRÉDITO DENEGADO"
             veredicto_cls = "approved" if aprobado else "denied"
 
-            st.markdown(f"""
+            render_html(f"""
             <div class="gauge-wrap">
               <div class="gauge-num" style="color:{color}">{pct:.1f}%</div>
               <div class="gauge-label">probabilidad de aprobación</div>
@@ -420,10 +374,9 @@ with col_result:
               <h3>Peso de cada factor en esta solicitud</h3>
               {factor_rows}
             </div>
-            """, unsafe_allow_html=True)
+            """)
 
-st.markdown(
+render_html(
     '<div class="footnote">Herramienta educativa de análisis crediticio · '
-    'no constituye asesoría financiera</div>',
-    unsafe_allow_html=True,
+    'no constituye asesoría financiera</div>'
 )
