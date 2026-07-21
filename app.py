@@ -1,5 +1,5 @@
 ""
-Aprobación de Créditos — app Streamlit
+Aprobación de Créditos app Streamlit
 ---------------------------------------------------------------------------
 Misma fórmula y mismos coeficientes que entrenar_modelo.py (INTERCEPTO y
 COEFICIENTES). No se modifican aquí. Solo se corrige la presentación visual:
